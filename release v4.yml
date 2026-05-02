@@ -1,0 +1,52 @@
+name: Build and Release EXE
+
+on:
+  push:
+    tags:
+      - 'v*'   # Triggers on: git tag v4.0.0 && git push --tags
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pynput pystray Pillow cryptography requests pyinstaller
+
+      - name: Build standalone EXE
+        run: |
+          pyinstaller `
+            --noconsole `
+            --onefile `
+            --name "SmartTextReplacer" `
+            --icon "assets/icon.ico" `
+            text_replacer.py
+        # If you don't have an icon file yet, remove the --icon line above
+
+      - name: Upload EXE to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/SmartTextReplacer.exe
+          body: |
+            ## Smart Text Replacer ${{ github.ref_name }}
+
+            ### Install
+            Download `SmartTextReplacer.exe` and run it. No Python required.
+
+            If Windows SmartScreen warns you — click **More info → Run anyway**.
+            This is normal for unsigned open-source utilities.
+
+            ### What's New
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
